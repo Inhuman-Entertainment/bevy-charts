@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  # Keep CI output readable and builds reproducible.
+  RUSTFLAGS: -D warnings
+
+jobs:
+  check:
+    name: Test, lint, and format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      # Bevy needs ALSA and udev headers to build on Linux, even for a crate
+      # that only draws meshes.
+      - name: Install Bevy's Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features
+
+      # --all-targets covers the lib, unit tests, and examples but skips
+      # doctests, so they get their own run.
+      - name: Test
+        run: cargo test --all-targets
+
+      - name: Doctests
+        run: cargo test --doc

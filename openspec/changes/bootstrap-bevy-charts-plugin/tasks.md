@@ -79,4 +79,7 @@
 - [ ] 10.4 Stacked bars and area charts
 - [ ] 10.5 Incremental rebuilds for large, frequently-updated datasets
 - [ ] 10.6 Picking and tooltips
-- [ ] 10.7 CI: build, test, clippy, and rustfmt on push
+- [x] 10.7 CI: build, test, clippy, and rustfmt on push and pull request.
+      Added early, out of order, because "merge on green" needs a green to
+      exist — and because `rustfmt` and `clippy` are not installed on the
+      development machine, so CI is the first thing to check either.
