@@ -23,12 +23,18 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      # Bevy needs ALSA and udev headers to build on Linux, even for a crate
-      # that only draws meshes.
+      # The library itself only needs ALSA and udev, but the examples pull in
+      # bevy with default features, which links winit against Wayland and
+      # xkbcommon. Without these the build fails in wayland-sys's build script,
+      # long before any lint runs.
       - name: Install Bevy's Linux dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
+          sudo apt-get install --no-install-recommends -y \
+            libasound2-dev \
+            libudev-dev \
+            libwayland-dev \
+            libxkbcommon-dev
 
       - name: Format
         run: cargo fmt --all --check
