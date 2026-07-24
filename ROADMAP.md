@@ -25,8 +25,10 @@ Still uncovered:
 - [ ] **Text labels** — axis ticks, category names, and legends in 3D. The largest
       gap: `ChartData::labels` and `Dataset::label` are carried through the data
       model but never drawn, so charts cannot currently identify themselves and
-      depend on external UI. Billboarded text in a 3D scene needs a design pass
-      before any code.
+      depend on external UI. **Designed** — see the
+      `add-chart-text-labels` change. World-space glyph meshes, so labels occlude
+      like any other geometry. Blocked on a spike (task 1) establishing how to
+      obtain a glyph layout in a scene with no 2D camera.
 - [ ] **Stacked bars and area charts.**
 - [ ] **Picking and tooltips.**
 
