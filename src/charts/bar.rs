@@ -53,10 +53,7 @@ impl Default for BarChart3d {
 impl BarChart3d {
     /// A bar chart of `data` with default spacing.
     pub fn new(data: ChartData) -> Self {
-        Self {
-            data,
-            ..default()
-        }
+        Self { data, ..default() }
     }
 }
 
@@ -67,6 +64,23 @@ pub(crate) fn bar_value_scale(data: &ChartData, height: f32) -> Option<Scale> {
     Some(Scale::new(min.min(0.0), max.max(0.0), height))
 }
 
+/// How a set of bars is laid out inside a chart's box.
+///
+/// Grouped so that bar and histogram charts, which differ only in how they
+/// arrive at their categories, can share [`spawn_bars`] without passing a long
+/// tail of loose floats.
+#[derive(Clone, Copy)]
+pub(crate) struct BarLayout<'a> {
+    /// The box the bars fill.
+    pub size: Vec3,
+    /// The value axis.
+    pub scale: &'a Scale,
+    /// Fraction of each category slot left empty, in `0.0..1.0`.
+    pub category_gap: f32,
+    /// Fraction of each series slot left empty, in `0.0..1.0`.
+    pub series_gap: f32,
+}
+
 /// Spawn the bars for `data` as children of `parent`.
 ///
 /// Split out from the system so [`HistogramChart3d`](crate::charts::histogram::HistogramChart3d)
@@ -75,16 +89,20 @@ pub(crate) fn spawn_bars(
     parent: &mut ChildSpawnerCommands,
     assets: &mut ChartAssets,
     data: &ChartData,
-    size: Vec3,
     palette: &ChartPalette,
-    scale: &Scale,
-    category_gap: f32,
-    series_gap: f32,
+    layout: &BarLayout,
 ) {
     let categories = data.category_count();
     if categories == 0 || data.datasets.is_empty() {
         return;
     }
+
+    let BarLayout {
+        size,
+        scale,
+        category_gap,
+        series_gap,
+    } = *layout;
 
     let slot_x = size.x / categories as f32;
     let slot_z = size.z / data.datasets.len() as f32;
@@ -162,11 +180,13 @@ fn build_bar_charts(
                     parent,
                     &mut assets,
                     &chart.data,
-                    size,
                     palette,
-                    &scale,
-                    chart.category_gap,
-                    chart.series_gap,
+                    &BarLayout {
+                        size,
+                        scale: &scale,
+                        category_gap: chart.category_gap,
+                        series_gap: chart.series_gap,
+                    },
                 );
             });
     }

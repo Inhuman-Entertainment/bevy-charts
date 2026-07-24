@@ -40,10 +40,7 @@ fn setup(mut commands: Commands) {
         .with_dataset(Dataset::new("Mobile", vec![8.0, 14.0, 17.0, 11.0]))
         .with_dataset(Dataset::new("Tablet", vec![3.0, 5.0, 4.0, 9.0]));
 
-    commands.spawn((
-        BarChart3d::new(data),
-        ChartSize(Vec3::new(6.0, 3.0, 3.0)),
-    ));
+    commands.spawn((BarChart3d::new(data), ChartSize(Vec3::new(6.0, 3.0, 3.0))));
 }
 
 /// Slowly circles the camera, because a 3D chart read from one fixed angle is

@@ -8,7 +8,7 @@
 use bevy::prelude::*;
 
 use crate::axis::{AxisStyle, spawn_axes};
-use crate::charts::bar::{bar_value_scale, spawn_bars};
+use crate::charts::bar::{BarLayout, bar_value_scale, spawn_bars};
 use crate::charts::{ChartAssets, ChartChanged, ChartPrimitives, ChartSize, MaterialCache};
 use crate::data::{ChartData, Dataset};
 use crate::palette::ChartPalette;
@@ -110,8 +110,9 @@ impl HistogramChart3d {
         }
         let (min, max) = self.effective_range()?;
         // A single repeated value has no width to divide into bins; widen it so
-        // the sample still lands somewhere.
-        let (min, max) = if max - min < f32::EPSILON {
+        // the sample still lands somewhere. `effective_range` guarantees
+        // `min <= max`, so the `abs` is belt-and-braces against that changing.
+        let (min, max) = if (max - min).abs() < f32::EPSILON {
             (min - 0.5, max + 0.5)
         } else {
             (min, max)
@@ -194,11 +195,13 @@ fn build_histogram_charts(
                     parent,
                     &mut assets,
                     &data,
-                    size,
                     palette,
-                    &scale,
-                    chart.bin_gap,
-                    chart.series_gap,
+                    &BarLayout {
+                        size,
+                        scale: &scale,
+                        category_gap: chart.bin_gap,
+                        series_gap: chart.series_gap,
+                    },
                 );
             });
     }
@@ -230,8 +233,7 @@ mod tests {
 
     #[test]
     fn the_maximum_lands_in_the_last_bin_not_past_it() {
-        let chart =
-            HistogramChart3d::new(vec![Dataset::new("s", vec![0.0, 10.0])]).with_bins(4);
+        let chart = HistogramChart3d::new(vec![Dataset::new("s", vec![0.0, 10.0])]).with_bins(4);
         let counts = &chart.to_chart_data().unwrap().datasets[0].data;
         assert_eq!(counts[0], 1.0);
         assert_eq!(counts[3], 1.0, "the top edge belongs to the last bin");

@@ -94,11 +94,7 @@ impl Default for AxisStyle {
 /// Lines render a fixed pixel width regardless of distance, which is what a
 /// recessive grid wants — thickening it with geometry would fight the data.
 pub fn line_list_mesh(segments: &[[Vec3; 2]]) -> Mesh {
-    let positions: Vec<[f32; 3]> = segments
-        .iter()
-        .flatten()
-        .map(|p| [p.x, p.y, p.z])
-        .collect();
+    let positions: Vec<[f32; 3]> = segments.iter().flatten().map(|p| [p.x, p.y, p.z]).collect();
     Mesh::new(PrimitiveTopology::LineList, RenderAssetUsages::default())
         .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
 }
@@ -160,7 +156,11 @@ pub(crate) fn spawn_axes(
         }
         let mesh = ctx.meshes.add(line_list_mesh(&segments));
         let material = ctx.unlit_material(color);
-        parent.spawn((Mesh3d(mesh), MeshMaterial3d(material), Visibility::default()));
+        parent.spawn((
+            Mesh3d(mesh),
+            MeshMaterial3d(material),
+            Visibility::default(),
+        ));
     }
 }
 
@@ -190,7 +190,10 @@ mod tests {
         assert!(!ticks.is_empty());
         assert!(ticks.iter().all(|t| *t >= 0.0 && *t <= 100.0));
         // Round numbers are the whole reason we defer to plotters here.
-        assert!(ticks.contains(&50.0), "expected a tick at 50, got {ticks:?}");
+        assert!(
+            ticks.contains(&50.0),
+            "expected a tick at 50, got {ticks:?}"
+        );
     }
 
     #[test]

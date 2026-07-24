@@ -57,8 +57,7 @@ fn setup(mut commands: Commands) {
             let points = (0..60)
                 .map(|i| {
                     let seed = (series as u32 * 1000 + i) * 3;
-                    *center
-                        + Vec3::new(noise(seed), noise(seed + 1), noise(seed + 2)) * 2.0
+                    *center + Vec3::new(noise(seed), noise(seed + 1), noise(seed + 2)) * 2.0
                 })
                 .collect::<Vec<_>>();
             PointDataset::new(*label, points)

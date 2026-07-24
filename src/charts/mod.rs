@@ -131,7 +131,8 @@ pub(crate) type ChartChanged<C> = Or<(
 
 /// Transform placing a unit cube as a box spanning `min..max`.
 pub(crate) fn box_transform(min: Vec3, max: Vec3) -> Transform {
-    Transform::from_translation((min + max) * 0.5).with_scale((max - min).abs().max(Vec3::splat(1e-5)))
+    Transform::from_translation((min + max) * 0.5)
+        .with_scale((max - min).abs().max(Vec3::splat(1e-5)))
 }
 
 /// Transform placing a unit cube as a square-section bar from `start` to `end`.
@@ -141,8 +142,11 @@ pub(crate) fn box_transform(min: Vec3, max: Vec3) -> Transform {
 pub(crate) fn segment_transform(start: Vec3, end: Vec3, thickness: f32) -> Transform {
     let delta = end - start;
     let length = delta.length();
-    let mut transform = Transform::from_translation((start + end) * 0.5)
-        .with_scale(Vec3::new(thickness, thickness, length.max(1e-5)));
+    let mut transform = Transform::from_translation((start + end) * 0.5).with_scale(Vec3::new(
+        thickness,
+        thickness,
+        length.max(1e-5),
+    ));
     if let Ok(direction) = Dir3::new(delta) {
         // `looking_to` aims local -z; the sign does not matter for a symmetric box.
         transform.rotation = Transform::default().looking_to(direction, Vec3::Y).rotation;

@@ -58,11 +58,7 @@ fn setup(mut commands: Commands) {
 ///
 /// Deliberately not every frame: each change rebuilds the chart's geometry, and
 /// a sampled chart is what you would actually want anyway.
-fn push_samples(
-    time: Res<Time>,
-    mut next_sample: Local<f32>,
-    mut chart: Single<&mut LineChart3d>,
-) {
+fn push_samples(time: Res<Time>, mut next_sample: Local<f32>, mut chart: Single<&mut LineChart3d>) {
     let t = time.elapsed_secs();
     if t < *next_sample {
         return;

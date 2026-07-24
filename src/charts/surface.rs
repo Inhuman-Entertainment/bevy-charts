@@ -73,12 +73,7 @@ impl SurfaceChart3d {
 }
 
 /// Triangulate the height field into a mesh spanning `size` in x and z.
-fn surface_mesh(
-    chart: &SurfaceChart3d,
-    size: Vec3,
-    scale: &Scale,
-    palette: &ChartPalette,
-) -> Mesh {
+fn surface_mesh(chart: &SurfaceChart3d, size: Vec3, scale: &Scale, palette: &ChartPalette) -> Mesh {
     let (cols, rows) = (chart.cols, chart.rows);
     let mut positions = Vec::with_capacity(cols * rows);
     let mut colors = Vec::with_capacity(cols * rows);
@@ -89,7 +84,11 @@ fn surface_mesh(
         for col in 0..cols {
             let u = col as f32 / (cols - 1) as f32;
             let height = chart.heights[row * cols + col];
-            let height = if height.is_finite() { height } else { scale.min };
+            let height = if height.is_finite() {
+                height
+            } else {
+                scale.min
+            };
 
             positions.push([u * size.x, scale.map(height), v * size.z]);
             uvs.push([u, v]);
@@ -112,12 +111,15 @@ fn surface_mesh(
         }
     }
 
-    Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default())
-        .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
-        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
-        .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, colors)
-        .with_inserted_indices(Indices::U32(indices))
-        .with_computed_normals()
+    Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::default(),
+    )
+    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
+    .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
+    .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, colors)
+    .with_inserted_indices(Indices::U32(indices))
+    .with_computed_normals()
 }
 
 fn build_surface_charts(

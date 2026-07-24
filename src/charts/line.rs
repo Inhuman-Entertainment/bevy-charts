@@ -58,10 +58,7 @@ impl Default for LineChart3d {
 impl LineChart3d {
     /// A line chart of `data` with default styling.
     pub fn new(data: ChartData) -> Self {
-        Self {
-            data,
-            ..default()
-        }
+        Self { data, ..default() }
     }
 }
 
