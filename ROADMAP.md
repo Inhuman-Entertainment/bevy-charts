@@ -8,19 +8,17 @@ own specs and tasks, and this entry should link to it.
 
 ## Verification
 
-The library's pure functions are well covered, but nothing tests it as a Bevy
-app. Every spec scenario describing ECS behaviour — that a chart rebuilds when
-its data changes, that an unchanged chart is left alone, that the material cache
-stops rebuilds from leaking assets, that plugins compose — was checked once by
-hand and cannot be rechecked by CI.
+- [x] Integration tests driving a headless `App` — see `tests/rebuild.rs`. Covers
+      rebuild-on-change, no-rebuild-when-unchanged (by entity identity, not just
+      count), the material cache not leaking across rebuilds, plugin composition,
+      stale geometry being cleared, non-finite values being skipped, and every
+      generated entity carrying `Visibility`.
 
-- [ ] Integration tests driving a headless `App` (`MinimalPlugins` + `AssetPlugin`),
-      asserting on generated children across `app.update()` calls.
+Still uncovered:
 
-This matters more than it looks. The one real bug found so far — chart children
-missing `Visibility`, which in Bevy 0.19 `Mesh3d` does not require — compiled
-cleanly, passed every unit test, and rendered nothing. Only running the app
-caught it. An app-level test would have caught it automatically.
+- [ ] Anything requiring a GPU: that the meshes are *correct*, not merely
+      present. The showcase render is checked by eye when it changes.
+- [ ] Large-dataset behaviour under load.
 
 ## Features
 
@@ -47,6 +45,11 @@ core dependency — the reasoning is in the bootstrap change's `design.md`.
 - [ ] **Incremental rebuilds.** A chart currently despawns and respawns every
       child on any change, which is fine at the sampling rates the examples use
       but wrong for a large, frequently-updated dataset.
+- [ ] **Skip zero-extent bars.** Bar and histogram charts spawn an entity per
+      value including zeros, which `box_transform` collapses to a 1e-5 sliver —
+      invisible, but still an entity and a draw call. A histogram with mostly
+      empty bins pays for all of them. Noticed while writing `tests/rebuild.rs`,
+      where four observations produce ten bars.
 
 ## Repository
 
