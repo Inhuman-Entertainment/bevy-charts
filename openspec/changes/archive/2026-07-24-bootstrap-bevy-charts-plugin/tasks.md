@@ -70,16 +70,6 @@
 - [x] 9.5 Fix: `Mesh3d` requires only `Transform` in Bevy 0.19, so chart children
       needed an explicit `Visibility` to be picked up by render extraction
 
-## 10. Follow-up (not in this change)
-
-- [ ] 10.1 Text labels: axis ticks, category names, and legends in 3D
-- [ ] 10.2 Optional `charton` feature adapting its `ScaleTrait` for log, time, and
-      band scales — see `design.md`
-- [ ] 10.3 Extension chart types via `charton`: boxplot, density/violin
-- [ ] 10.4 Stacked bars and area charts
-- [ ] 10.5 Incremental rebuilds for large, frequently-updated datasets
-- [ ] 10.6 Picking and tooltips
-- [x] 10.7 CI: build, test, clippy, and rustfmt on push and pull request.
-      Added early, out of order, because "merge on green" needs a green to
-      exist — and because `rustfmt` and `clippy` are not installed on the
-      development machine, so CI is the first thing to check either.
+<!-- Deferred work lives in ROADMAP.md at the repository root, not here: this
+     file tracks only what is in scope for this change, so that a completed
+     change reads as completed. -->

@@ -112,8 +112,11 @@ impl ChartPalette {
     /// Sample the sequential ramp at `t`, clamped to `0.0..=1.0`.
     ///
     /// Used to encode continuous magnitude, such as height on a surface chart.
+    /// A non-finite `t` samples the low end: `f32::clamp` propagates `NaN`
+    /// rather than clamping it, and letting that through would produce a `NaN`
+    /// vertex color and a corrupt mesh.
     pub fn sequential(&self, t: f32) -> Color {
-        let t = t.clamp(0.0, 1.0);
+        let t = if t.is_nan() { 0.0 } else { t.clamp(0.0, 1.0) };
         let last = SEQUENTIAL.len() - 1;
         // Interpolate in sRGB space between the two nearest published steps; the
         // ramp is dense enough that a linear blend stays on the intended hue.
@@ -126,5 +129,105 @@ impl ChartPalette {
         let (r1, g1, b1) = SEQUENTIAL[hi];
         let lerp = |a: u8, b: u8| (a as f32 + (b as f32 - a as f32) * f) / 255.0;
         Color::srgb(lerp(r0, r1), lerp(g0, g1), lerp(b0, b1))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Perceptual-ish distance between two colors, for asserting that things are
+    /// visibly different rather than merely unequal bit patterns.
+    fn distance(a: Color, b: Color) -> f32 {
+        let (a, b) = (a.to_linear(), b.to_linear());
+        ((a.red - b.red).powi(2) + (a.green - b.green).powi(2) + (a.blue - b.blue).powi(2)).sqrt()
+    }
+
+    #[test]
+    fn every_slot_is_a_distinct_color() {
+        for palette in [ChartPalette::dark(), ChartPalette::light()] {
+            for i in 0..SERIES_SLOTS {
+                for j in (i + 1)..SERIES_SLOTS {
+                    let d = distance(palette.series_color(i), palette.series_color(j));
+                    assert!(d > 0.01, "slots {i} and {j} are indistinguishable ({d})");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn indices_past_the_last_slot_clamp_rather_than_cycle() {
+        let palette = ChartPalette::dark();
+        let last = palette.series_color(SERIES_SLOTS - 1);
+
+        // Clamping is the point: wrapping would make series 8 collide with
+        // series 0, which reads as "these two are the same thing".
+        assert_eq!(palette.series_color(SERIES_SLOTS), last);
+        assert_eq!(palette.series_color(SERIES_SLOTS + 5), last);
+        assert_eq!(palette.series_color(usize::MAX), last);
+        assert_ne!(palette.series_color(SERIES_SLOTS), palette.series_color(0));
+    }
+
+    #[test]
+    fn dark_and_light_are_separately_stepped() {
+        let (dark, light) = (ChartPalette::dark(), ChartPalette::light());
+        assert_ne!(dark.axis, light.axis);
+        assert_ne!(dark.grid, light.grid);
+
+        // Most hues are re-stepped for their background. Green is deliberately
+        // shared, so require a clear majority rather than all eight.
+        let differing = (0..SERIES_SLOTS)
+            .filter(|i| dark.series_color(*i) != light.series_color(*i))
+            .count();
+        assert!(
+            differing >= SERIES_SLOTS - 1,
+            "expected the modes to be separately stepped, {differing}/{SERIES_SLOTS} differ"
+        );
+    }
+
+    #[test]
+    fn the_default_palette_is_the_dark_one() {
+        assert_eq!(ChartPalette::default(), ChartPalette::dark());
+        assert_eq!(PaletteMode::default(), PaletteMode::Dark);
+    }
+
+    #[test]
+    fn the_sequential_ramp_hits_both_published_ends() {
+        let palette = ChartPalette::dark();
+        let (first, last) = (SEQUENTIAL[0], SEQUENTIAL[SEQUENTIAL.len() - 1]);
+
+        let to_ends = |c: (u8, u8, u8)| Color::srgb_u8(c.0, c.1, c.2);
+        assert!(distance(palette.sequential(0.0), to_ends(first)) < 0.01);
+        assert!(distance(palette.sequential(1.0), to_ends(last)) < 0.01);
+    }
+
+    #[test]
+    fn the_sequential_ramp_clamps_out_of_range_input() {
+        let palette = ChartPalette::dark();
+        assert_eq!(palette.sequential(-5.0), palette.sequential(0.0));
+        assert_eq!(palette.sequential(5.0), palette.sequential(1.0));
+        // NaN must not index out of bounds; `clamp` maps it to the low end.
+        assert!(palette.sequential(f32::NAN).to_linear().red.is_finite());
+    }
+
+    #[test]
+    fn the_sequential_ramp_darkens_monotonically() {
+        // Magnitude is encoded by getting darker, so luminance must never rise
+        // as t increases or the encoding would reverse mid-ramp.
+        let palette = ChartPalette::dark();
+        let luminance = |t: f32| {
+            let c = palette.sequential(t).to_linear();
+            0.2126 * c.red + 0.7152 * c.green + 0.0722 * c.blue
+        };
+        let mut previous = luminance(0.0);
+        for step in 1..=50 {
+            let current = luminance(step as f32 / 50.0);
+            assert!(
+                current <= previous + 1e-4,
+                "ramp brightened at t={}: {previous} -> {current}",
+                step as f32 / 50.0
+            );
+            previous = current;
+        }
     }
 }
