@@ -274,16 +274,21 @@ single session, directed and reviewed by a human maintainer.
 What that means in practice, stated plainly so you can calibrate your trust:
 
 - **It runs.** Every chart type in the screenshot above was rendered by the actual
-  crate on real hardware, not mocked up. The build is warning-free, and 17 unit
-  tests plus 7 doctests pass.
+  crate on real hardware, not mocked up. The build is warning-free, and 31 unit
+  tests, 13 integration tests against a headless `App`, and 7 doctests pass on
+  every push.
 - **It was debugged by running it, not by reading it.** The first render came out
   black: in Bevy 0.19 `Mesh3d` requires only `Transform`, not `Visibility`, so the
   generated child entities were never picked up by render extraction. That
   compiles cleanly and renders nothing. It was found by building the thing and
-  looking at the screen.
+  looking at the screen — and there is now a test that would catch it.
+- **Both bugs found so far were found by running the code, not reading it.** The
+  other was `ChartPalette::sequential` returning a `NaN` color for a `NaN` input,
+  because `f32::clamp` propagates `NaN` rather than clamping it. Assume that
+  class of bug is what remains, and reach for a test rather than a code review.
 - **The API surface has not been battle-tested.** It has not been used in a
   shipping game, profiled under load, or exercised against adversarial data
-  beyond its unit tests. Treat 0.1 as exactly that.
+  beyond its test suite. Treat 0.1 as exactly that.
 - **Design decisions are written down**, in `openspec/`, including the ones that
   were considered and rejected. If a choice looks wrong, the reasoning is
   recoverable rather than lost.
