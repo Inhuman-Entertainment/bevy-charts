@@ -259,8 +259,10 @@ than a dependency, is in
 - **Picking and tooltips.**
 - **Incremental rebuilds** for large, frequently-updated datasets.
 
-Planned work is tracked in [`openspec/`](openspec/), which is also where new work
-should be proposed.
+These and the rest of the known gaps are listed in [`ROADMAP.md`](ROADMAP.md).
+Specifications for what already exists live in
+[`openspec/specs/`](openspec/specs/), and new work should be proposed as an
+OpenSpec change.
 
 ## AI co-authorship
 

@@ -147,3 +147,86 @@ pub fn point_bounds(datasets: &[PointDataset]) -> Option<(Vec3, Vec3)> {
     }
     any.then_some((min, max))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn category_count_follows_the_longest_series_not_the_labels() {
+        // Values without labels still need slots to draw into, so this is not
+        // simply `labels.len()`.
+        let data = ChartData::new()
+            .with_labels(["a", "b"])
+            .with_dataset(Dataset::new("s", vec![1.0, 2.0, 3.0, 4.0]));
+        assert_eq!(data.category_count(), 4);
+
+        let data = ChartData::new().with_labels(["a", "b", "c"]);
+        assert_eq!(data.category_count(), 3);
+
+        assert_eq!(ChartData::new().category_count(), 0);
+    }
+
+    #[test]
+    fn value_range_spans_every_series() {
+        let data = ChartData::new()
+            .with_dataset(Dataset::new("low", vec![-3.0, 1.0]))
+            .with_dataset(Dataset::new("high", vec![4.0, 9.0]));
+        assert_eq!(data.value_range(), Some((-3.0, 9.0)));
+    }
+
+    #[test]
+    fn value_range_ignores_non_finite_values() {
+        let data = ChartData::new().with_dataset(Dataset::new(
+            "s",
+            vec![f32::NAN, 2.0, f32::INFINITY, 5.0, f32::NEG_INFINITY],
+        ));
+        assert_eq!(data.value_range(), Some((2.0, 5.0)));
+    }
+
+    #[test]
+    fn value_range_is_none_when_nothing_is_plottable() {
+        assert_eq!(ChartData::new().value_range(), None);
+        let empty_series = ChartData::new().with_dataset(Dataset::new("s", Vec::new()));
+        assert_eq!(empty_series.value_range(), None);
+        let all_nan = ChartData::new().with_dataset(Dataset::new("s", vec![f32::NAN]));
+        assert_eq!(all_nan.value_range(), None);
+    }
+
+    #[test]
+    fn an_explicit_color_overrides_the_palette_slot() {
+        let plain = Dataset::new("s", vec![1.0]);
+        assert_eq!(plain.color, None);
+        let pinned = Dataset::new("s", vec![1.0]).with_color(Color::WHITE);
+        assert_eq!(pinned.color, Some(Color::WHITE));
+    }
+
+    #[test]
+    fn point_bounds_covers_the_union_of_every_series() {
+        // Series must share one mapping, so the bounds are the union rather
+        // than each series being normalised to itself.
+        let datasets = vec![
+            PointDataset::new("a", vec![Vec3::new(-1.0, 0.0, 5.0)]),
+            PointDataset::new("b", vec![Vec3::new(3.0, 8.0, -2.0)]),
+        ];
+        assert_eq!(
+            point_bounds(&datasets),
+            Some((Vec3::new(-1.0, 0.0, -2.0), Vec3::new(3.0, 8.0, 5.0)))
+        );
+    }
+
+    #[test]
+    fn point_bounds_skips_non_finite_points_and_reports_nothing_when_empty() {
+        let with_nan = vec![PointDataset::new(
+            "a",
+            vec![Vec3::splat(f32::NAN), Vec3::new(1.0, 2.0, 3.0)],
+        )];
+        assert_eq!(
+            point_bounds(&with_nan),
+            Some((Vec3::new(1.0, 2.0, 3.0), Vec3::new(1.0, 2.0, 3.0)))
+        );
+
+        assert_eq!(point_bounds(&[]), None);
+        assert_eq!(point_bounds(&[PointDataset::new("a", Vec::new())]), None);
+    }
+}
